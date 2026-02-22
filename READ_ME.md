@@ -1,10 +1,10 @@
 # HOW TO START PROJECT: 
 1.In three individual terminals, run the commands IN THIS ORDER:
-<ul>
-  a. python reversi_server.py
-  b. python greedy_player.py
-  c. python greedy_player.py (For second player)
-</ul>
+<ol>
+  <li> python reversi_server.py </li>
+  <li> python greedy_player.py </li>
+  <li> python greedy_player.py (For second player) </li>
+</ol>
 
 The Runner game window will display after starting within this order where a game of reversi will commence until the game is completed with one player dominating over the other. This will oepn a pygame display window the will show you the game and its pieces run through the animation. 
 
