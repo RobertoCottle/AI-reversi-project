@@ -4,7 +4,11 @@
   b. python greedy_player.py
   c. python greedy_player.py (For second player)
 
-The Runner game window will display after starting within this order where a game of reversi will commence until the game is completed with one player dominating over the other. This will oepn a pygame display window the will show you the game and its peices run through the animation. 
+The Runner game window will display after starting within this order where a game of reversi will commence until the game is completed with one player dominating over the other. This will oepn a pygame display window the will show you the game and its pieces run through the animation. 
+
+Once the window has displayed, `click` on the window to have the game animation start and let it run through until the game has stoped and neither hand can make any more moves. To close the window, simply `click` on the window again to close out the window. 
+
+NOTE: in the seperate terminals for the players, `1` represets the white hand, `-1` represents the black hand.
 
 <!-- REVERSI RULES: -->
 (WATCH THIS VIDEO, this will cover the basics of REVERSI RULES)
