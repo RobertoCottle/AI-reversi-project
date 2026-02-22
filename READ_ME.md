@@ -1,8 +1,10 @@
-<!-- HOW TO START PROJECT: -->
+# HOW TO START PROJECT: 
 1.In three individual terminals, run the commands IN THIS ORDER:
+<ul>
   a. python reversi_server.py
   b. python greedy_player.py
   c. python greedy_player.py (For second player)
+</ul>
 
 The Runner game window will display after starting within this order where a game of reversi will commence until the game is completed with one player dominating over the other. This will oepn a pygame display window the will show you the game and its pieces run through the animation. 
 
@@ -10,7 +12,7 @@ Once the window has displayed, `click` on the window to have the game animation 
 
 NOTE: in the seperate terminals for the players, `1` represets the white hand, `-1` represents the black hand.
 
-<!-- REVERSI RULES: -->
+# REVERSI RULES:
 (WATCH THIS VIDEO, this will cover the basics of REVERSI RULES)
 https://www.youtube.com/watch?v=4XdyAZhzJW8
 
@@ -33,7 +35,9 @@ https://www.youtube.com/watch?v=4XdyAZhzJW8
 9. The player with the most discs of his color on the board at the end of the game wins. The game is a draw if both players have the same number of discs
 (NOTE: When making a move, you may outflank your opponent's discs in more than one direction. All outflanked discs are flipped)
 
+<ul>
 SEE HERE FOR REFERENCE: https://documentation.help/Reversi-Rules/rules.htm 
 
 FOR REFERENCE ON STRATEGY: https://documentation.help/Reversi-Rules/strategy.htm 
+</ul>
 
