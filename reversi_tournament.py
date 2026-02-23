@@ -1,6 +1,6 @@
+import sys 
+import importlib
 import numpy as np
-import greedy_player
-import Better_Player
 from reversi import reversi
 
 NUM_GAMES = 100
@@ -142,5 +142,16 @@ def print_results(results):
             print(f"{phase.capitalize()}: {np.mean(results['phase_stats'][phase]):.2f}")
 
 if __name__ == "__main__":
-    results = run_tournament(greedy_player, greedy_player)
+    if len(sys.argv) != 3:
+        print("Usage: python reversi_tournament.py player1 player2")
+        sys.exit(1)
+
+    # Import players dynamically
+    player1 = importlib.import_module(sys.argv[1])
+    player2 = importlib.import_module(sys.argv[2])
+
+    results = run_tournament(player1, player2)
     print_results(results)
+
+## this is how it accepts the command line argument
+# python reversi_tournament.py greedy_player greedy_player

@@ -45,3 +45,5 @@ b. Detect parity regions
 c. Detect edge stability chains
 d. Use pattern databases (https://samsoft.org.uk/reversi/strategy.htm)
 e. Use exact endgame solver
+
+--work on adding command line arguments
