@@ -4,6 +4,23 @@ import numpy as np
 import socket, pickle
 from reversi import reversi
 
+def get_tourn_move(board, turn):
+    game = reversi()
+    game.board = board.copy()
+
+    best_move = (-1,-1)
+    max_flips = 0
+    
+    for i in range(8):
+        for j in range(8):
+            flips = game.step(i, j, turn, False) # simulate only
+
+            if flips > max_flips:
+                max_flips = flips
+                best_move = (i, j)
+
+    return best_move
+
 def main():
     game_socket = socket.socket()
     game_socket.connect(('127.0.0.1', 33333))

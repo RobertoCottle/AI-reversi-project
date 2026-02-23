@@ -28,3 +28,20 @@ Since your evaluation is shallow (flip count or depth-limited search),
 White often snowballs.
 
 -black wins when I add more depth
+
+-need to add weights to this in the context of the algorithm
+
+
+--feb,23,2026:
+-not just a better algorithm, but the code needs to be optimized, in order to:
+1. Save memory space to compute faster, that means optimizing code to be O(n) efficient
+2. Implementing the algorithm with heurisitcs for the best strategies as well as most common positions in game
+3. Finding where to implement certain algorithms or algorithms in place for early, mid, and end game advancement.
+4. ai should also have defensive capabilities and be able to tell what strategy the othe enemy is trying to do.
+
+Possible advancement ideas:
+a. Detect true stable discs
+b. Detect parity regions
+c. Detect edge stability chains
+d. Use pattern databases (https://samsoft.org.uk/reversi/strategy.htm)
+e. Use exact endgame solver
