@@ -4,6 +4,7 @@ import numpy as np
 import socket, pickle
 from reversi import reversi
 
+#specifically for tournament tester
 def get_tourn_move(board, turn):
     game = reversi()
     game.board = board.copy()

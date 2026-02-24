@@ -9,6 +9,16 @@ NUM_GAMES = 100
 # Utility Functions
 # --------------------
 
+#gets function from module that returns var: tuple[Literal[-1], Literal[-1]] | tuple[int, int]
+# og function must specify game = reversi() game.board = board.copy() within scope
+def get_move_func(module):
+    if hasattr(module, "get_tourn_move"):
+        return getattr(module, "get_tourn_move")
+    elif hasattr(module, "choose_move"):
+        return getattr(module, "choose_move")
+    else:
+        raise AttributeError(f"Module '{module.__name__}' has neither 'get_tourn_move' nor 'choose_move'.")
+
 def get_phase(move_number):
     if move_number < 20:
         return "early"
@@ -39,11 +49,19 @@ def play_game(player1, player2):
         "late": []
     }
 
+    player1_move = get_move_func(player1)
+    player2_move = get_move_func(player2)
+
     while True:
+        # if turn == 1:
+        #     move = player1.get_tourn_move(game.board.copy(), turn)
+        # else:
+        #     move = player2.get_tourn_move(game.board.copy(), turn)
+
         if turn == 1:
-            move = player1.get_tourn_move(game.board.copy(), turn)
+            move = player1_move(game.board.copy(), turn)
         else:
-            move = player2.get_tourn_move(game.board.copy(), turn)
+            move = player2_move(game.board.copy(), turn)
 
         if move == (-1,-1): 
             passes += 1 #passes increase if no legal moves available 
