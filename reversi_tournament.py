@@ -53,10 +53,6 @@ def play_game(player1, player2):
     player2_move = get_move_func(player2)
 
     while True:
-        # if turn == 1:
-        #     move = player1.get_tourn_move(game.board.copy(), turn)
-        # else:
-        #     move = player2.get_tourn_move(game.board.copy(), turn)
 
         if turn == 1:
             move = player1_move(game.board.copy(), turn)
