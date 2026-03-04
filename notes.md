@@ -49,3 +49,49 @@ Mid Phase:
 Late Phase:
   Avg White Corners: 2.50
   Avg Black Corners: 1.50
+
+  -- 3/2/26
+
+  for `Better_PlayerV3.py` I should not use arrays, as the iteration is slow, I should use a vectorized or bitwise approach to achieve these results.
+
+  -`Better_PlayerV3.py` is now taking to long to make a decision, going past 200 seconds. Start at `Better_PlayerV2.py` and research how to make the algorithm better. Perhaps bitwise or more vector operations. Try to research this part on google mainly, use the ai tools to research descriptions. 
+
+  --3/3/26
+
+-Better_PlayerV3 is able to defeat Better_Player at depth of 7, at depth of 6, it doubles the avg winning discs and corners in wins. however avg decision making time at depth 6+ is 15+ seconds plus, even reaching past a minute
+
+(These are the tournament results with both of a base of 3)
+  ===== TOURNAMENT RESULTS =====
+
+Better_Player:
+  Wins: 10
+  Losses: 10
+  Avg Winning Discs: 37.00
+  Avg Losing Discs: 24.00
+  Avg Corners in Wins: 1.00
+
+Better_PlayerV3:
+  Wins: 10
+  Losses: 10
+  Avg Winning Discs: 40.00
+  Avg Losing Discs: 27.00
+  Avg Corners in Wins: 2.00
+
+(These are the tournament results with both of a base of 3)
+  ===== TOURNAMENT RESULTS =====
+
+Better_PlayerV2:
+  Wins: 50
+  Losses: 50
+  Avg Winning Discs: 37.00
+  Avg Losing Discs: 27.00
+  Avg Corners in Wins: 1.00
+
+Better_PlayerV3:
+  Wins: 50
+  Losses: 50
+  Avg Winning Discs: 37.00
+  Avg Losing Discs: 27.00
+  Avg Corners in Wins: 1.00
+
+-Better_PlayerV2 and Better_PlayerV3 do not offer marginal improvements, more adjustments are to be made for further improvements.

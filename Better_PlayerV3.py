@@ -5,12 +5,16 @@ import socket
 import pickle
 import numpy as np
 from reversi import reversi
+import random
 
 HOST = "127.0.0.1"
 PORT = 33333
 
+#At BASE_DEPTH 6, avg win count increase 2x compared to Better_Player.py, at depth 7, BPV3 is able to beat Better_player
+#but it has an avg decision time of 15 seconds, sometimes going even longer than a minute. 
+
 # Base search depth (increases in late-game)
-BASE_DEPTH = 3
+BASE_DEPTH = 6 # depth 6, lead to an average of a 6 second decision, 9 exceeded past a minute --- 3/3/26
 
 # Positional Strategy Board - weighted positioning
 # Can modify / I've been playing with it
@@ -33,79 +37,44 @@ NEIGHBORS_8 = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
 # key: (board_bytes, turn, depth, root_player) -> minimax value
 TT = {}
 
-# given a coordinate, return (x, y) of the cloest corner on the 8x8 board.
-def get_linked_corner(x: int, y: int) -> tuple:
-    # If in the top half, row is 0, else 7
-    row = 0 if x < 4 else 7
-    # If in the left half, col is 0, else 7
-    col = 0 if y < 4 else 7
+# Zobristhashing is what is allowing the TT table to be used at a greater depth
+#XOR allows us to recompute only the cells that changed instead of rehasing all 64 squares from scratch
+#Instead of storing the entire board (64 cells) as the transposition table key, 
+# you store a single integer. Comparing two integers is vastly cheaper than comparing two arrays.
+class ZobristHasher:
+    def __init__(self):
+        # 64 cells, 3 states: 0=Empty, 1=White, -1=black
+        # We use a dictonary or list to mape these states to indicies
+        self.state_map = {0: 0, 1: 1, -1: 2}
+        # Table: [64_cells][3_states]
+        self.table = [[random.getrandbits(64) for _ in range(3)] for _ in range(64)]
 
-    return (row, col)
-
-### def get_positional_weight function for context-aware C/X squares
-def get_positional_weight(board, player, x, y):
-    # standard weight
-    base_weight = POS_WEIGHTS[x, y]
-
-    # Identify C and X squares
-    # (simplified lookup logic)
-    is_x_square = (x, y) in [(1,1), (1,6), (6,1), (6,6)]
-    is_c_square = (x, y) in [(0,1), (1,0), (0,6), (1,7), (6,0), (7,1), (6,7), (7,6)]
-
-    if is_x_square or is_c_square:
-        # Determine which corner this square is linked to
-        corner = get_linked_corner(x, y)
-
-        # If I own this corner, turn panlty into a bonus
-        if board[corner] == player:
-            return abs(base_weight) # Flip negative penalty to positive bonus
-        
-        # If the corner is empty, keep penalty high (Stoner Trap avoidance)
-        if board[corner] == 0:
-            return base_weight
-        
-        return base_weight
-
-# Detects if placing a piece at (x, y) forms a wedge. Returns a bonus if true.
-def check_wedge_move(board: np.ndarray, player: int, x: int, y: int) -> int:
-    # early exit if not an edge
-    if not (x == 0 or x == 7 or y == 0 or 7 == 7):
-        return 0
+    def get_hash(self, board: np.ndarray) -> int:
+        h = 0
+        for i in range(8):
+            for j in range(8):
+                piece = board[i, j]
+                h ^= self.table[i * 8 + j][self.state_map[piece]]
+        return h
     
-    # corners are special, don't treat them as simple wedges
-    if (x, y) in CORNERS:
-        return 0
+    def update_hash(self, current_hash: int, x: int, y: int, old_piece: int, new_piece: int) -> int:
+        # Remove the old piece state
+        current_hash ^= self.table[x * 8 + y][self.state_map[old_piece]]
+        # Add the new piece state
+        current_hash ^= self.table[x * 8 + y][self.state_map[new_piece]]
+        return current_hash
     
-    wedge_bonus = 50
-    opponent = -player
+# Initialize globally
+hasher = ZobristHasher()
 
-    # check Horizontal Edges (Top or Bottom rows)
-    if x == 0 or x == 7: 
-        # check left and right
-        left = y - 1
-        right = y + 1
-        # use bounds check before accessing
-        if left >= 0 and right <= 7:
-            if board[x, left] == opponent and board[x, right] == opponent:
-                return wedge_bonus
-    
-    # check Vertical Edges (Left or Right columns)
-    if y == 0 or y == 7:
-        # check up and down
-        up = x - 1
-        down = x + 1
-        if up >= 0 and down <= 7:
-            if board[up, y] == opponent and board[down, y] == opponent:
-                return wedge_bonus
-            
-    return 0
-    
-    # Check neighbors in the 8 cardinal directions
-    # If board[x-1, y] == opponent and board[x+1, y] == opponent,
-    # and we play in [x, y], that's a wedge.
-    # add a 'wedge_bonus' to the evaluation.
-    #return 50 #significant bonus for controlling edge segments
-
+def make_child_hash(old_board: np.ndarray, new_board: np.ndarray, current_hash: int) -> int:
+        # Compute new Zobrist hash by XOR-ing only the cells that changed."""
+        h = current_hash
+        for i in range(8):
+            for j in range(8):
+                if old_board[i, j] != new_board[i, j]:
+                    h = hasher.update_hash(h, i, j, old_board[i, j], new_board[i, j])
+        return h
 
 
 ### function for detecting wedges = A "wedge" move occurs when you play into an empty square that 
@@ -252,9 +221,12 @@ def tt_key(board: np.ndarray, turn: int, depth: int, root_player: int):
     return (board.tobytes(), turn, depth, root_player)
 
 # minimax + alpha-beta, plus transposition-table
-def minimax(g: reversi, depth: int, alpha: float, beta: float, turn: int, root_player: int) -> float:
+def minimax(g: reversi, depth: int, alpha: float, beta: float, turn: int, root_player: int, board_hash: int) -> float:
     board = g.board
-    k = tt_key(board, turn, depth, root_player)
+    # board.tobytes() was converting 8x8 numpy array into a
+    # 64-byte string every single time a node is visited.
+    #with hash, you only XOR the cells have changed, not the whole board
+    k = (board_hash, turn, depth, root_player)
     if k in TT:
         return TT[k]
 
@@ -269,16 +241,27 @@ def minimax(g: reversi, depth: int, alpha: float, beta: float, turn: int, root_p
 
     # Pass handling
     if not moves:
-        val = minimax(g, depth - 1, alpha, beta, -turn, root_player)
+        val = minimax(g, depth - 1, alpha, beta, -turn, root_player, board_hash)
         TT[k] = val
         return val
 
     if turn == root_player:  # maximizing
         best = -float("inf")
         for (x, y) in ordered_moves(g, turn):
+            old_board = g.board.copy()
             ng = clone_game_from_board(board)
             ng.step(x, y, turn, commit=True)
-            val = minimax(ng, depth - 1, alpha, beta, -turn, root_player)
+
+            # Calculate new hash incrementally (pseduocode)
+            # You need to track which cells changed during ng.step()
+            # and call hasher.update_hash(...) for each one
+            ## new_hash = .... # updated via hasher.update_hash
+            #  def get_hash(self, board: np.ndarray) -> int:
+            #  update_hash(self, current_hash: int, x: int, y: int, old_piece: int, new_piece: int) -> int: 
+            #new_hash = hasher.update_hash(ng.board, x, y,  )
+            new_hash = make_child_hash(old_board, ng.board, board_hash)
+            # Calculate new
+            val = minimax(ng, depth - 1, alpha, beta, -turn, root_player, new_hash)
             if val > best:
                 best = val
             if best > alpha:
@@ -290,9 +273,17 @@ def minimax(g: reversi, depth: int, alpha: float, beta: float, turn: int, root_p
     else:  # minimizing
         best = float("inf")
         for (x, y) in ordered_moves(g, turn):
+            old_board = g.board.copy()
             ng = clone_game_from_board(board)
             ng.step(x, y, turn, commit=True)
-            val = minimax(ng, depth - 1, alpha, beta, -turn, root_player)
+
+            new_hash = make_child_hash(old_board, ng.board, board_hash)
+            # Calculate new hash incrementally (pseduocode)
+            # You need to track which cells changed during ng.step()
+            # and call hasher.update_hash(...) for each one
+            ## new_hash = .... # updated via hasher.update_hash
+
+            val = minimax(ng, depth - 1, alpha, beta, -turn, root_player, new_hash)
             if val < best:
                 best = val
             if best < beta:
@@ -320,7 +311,15 @@ def choose_move(board: np.ndarray, player: int):
     for (x, y) in moves:
         ng = clone_game_from_board(board)
         ng.step(x, y, player, commit=True)
-        val = minimax(ng, depth - 1, alpha, beta, -player, player)
+        val = minimax(
+            ng, 
+            depth - 1, 
+            alpha, 
+            beta, 
+            -player, 
+            player, 
+            hasher.get_hash(ng.board)
+            )
         if val > best_val:
             best_val = val
             best_move = (x, y)
