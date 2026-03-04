@@ -95,3 +95,41 @@ Better_PlayerV3:
   Avg Corners in Wins: 1.00
 
 -Better_PlayerV2 and Better_PlayerV3 do not offer marginal improvements, more adjustments are to be made for further improvements.
+
+--- Donald 3/4/26 -----
+
+a. With added C_square, X_square, wedge control and zobrist hashing `Better_PlayerV3.` beats `Better_Player` at base depth of 3
+
+===== TOURNAMENT RESULTS =====
+
+Better_Player:
+  Wins: 0
+  Losses: 20
+  Avg Winning Discs: 0.00
+  Avg Losing Discs: 26.50
+  Avg Corners in Wins: 0.00
+
+Better_PlayerV3:
+  Wins: 20
+  Losses: 0
+  Avg Winning Discs: 37.50
+  Avg Losing Discs: 0.00
+  Avg Corners in Wins: 3.50
+
+b. `Better_PlayerV3.` also beats `Better_PlayerV2` at base depth of 3
+
+===== TOURNAMENT RESULTS =====
+
+Better_PlayerV2:
+  Wins: 0
+  Losses: 20
+  Avg Winning Discs: 0.00
+  Avg Losing Discs: 25.00
+  Avg Corners in Wins: 0.00
+
+Better_PlayerV3:
+  Wins: 20
+  Losses: 0
+  Avg Winning Discs: 39.00
+  Avg Losing Discs: 0.00
+  Avg Corners in Wins: 3.00

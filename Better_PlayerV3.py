@@ -14,7 +14,7 @@ PORT = 33333
 #but it has an avg decision time of 15 seconds, sometimes going even longer than a minute. 
 
 # Base search depth (increases in late-game)
-BASE_DEPTH = 6 # depth 6, lead to an average of a 6 second decision, 9 exceeded past a minute --- 3/3/26
+BASE_DEPTH = 3 # depth 6, lead to an average of a 6 second decision, 9 exceeded past a minute --- 3/3/26
 
 # Positional Strategy Board - weighted positioning
 # Can modify / I've been playing with it
@@ -31,11 +31,115 @@ POS_WEIGHTS = np.array([
 
 CORNERS = [(0, 0), (0, 7), (7, 0), (7, 7)]
 NEIGHBORS_8 = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+X_SQUARES = { # four diagonal squares adjacent to corners, dangerous to occupy early game
+    (0,0): (1,1), (0,7): (1,6),  # corner -> its X-square
+    (7,0): (6,1), (7,7): (6,6)
+}
+C_SQUARES = { #  squares directly adjacent to the corners along the edge, risky playing here bc it allows opponent to take corner
+    (0,0): [(0,1), (1,0)], (0,7): [(0,6), (1,7)],  # corner -> its C-squares
+    (7,0): [(6,0), (7,1)], (7,7): [(6,7), (7,6)]
+}
+# Edge segments for wedge detection, strong positions but must be taken carefully to avoid enabling the opponent to take a corner.
+EDGES = [
+    [(0,j) for j in range(8)],  # top
+    [(7,j) for j in range(8)],  # bottom
+    [(i,0) for i in range(8)],  # left
+    [(i,7) for i in range(8)]   # right
+]
 
 # Transposition Table
 # TT eliminates duplicate work within the same move calculation.
 # key: (board_bytes, turn, depth, root_player) -> minimax value
 TT = {}
+
+def corner_X_c_square_score(board: np.ndarray, player: int) -> float:
+    score = 0.0
+    opponent = -player
+
+    for corner, x_sq in X_SQUARES.items():
+        cx, cy = corner
+        xx, xy = x_sq
+        c_sqs = C_SQUARES[corner]
+
+        corner_val = board[cx, cy]
+
+        if corner_val == player:
+            # Corner is ours — X and C squares are safe, flip to small bonus
+            if board[xx, xy] == player:
+                score += 10.0
+            for (cx2, cy2) in c_sqs:
+                if board[cx2, cy2] == player:
+                    score += 5.0
+
+        elif corner_val == opponent:
+            # Corner is theirs — their X/C squares are now safe for them, penalize us
+            if board[xx, xy] == player:
+                score -= 15.0  # we're sitting on a now-safe square for opponent
+
+        else:
+            # Corner is EMPTY — classic danger zone logic applies
+            if board[xx, xy] == player:
+                score -= 30.0  # we're in X-square, opponent can take corner
+            elif board[xx, xy] == opponent:
+                # Stoner trap: opponent in X-square may be forcing us toward corner
+                # Check if we have weak edge pieces that make this a trap
+                score += 5.0   # opponent is actually in danger too
+
+            for (cx2, cy2) in c_sqs:
+                if board[cx2, cy2] == player:
+                    score -= 15.0  # C-square penalty when corner is empty
+                elif board[cx2, cy2] == opponent:
+                    score += 5.0   # opponent in C-square is their problem
+        
+        return score
+
+def wedge_score(board: np.ndarray, player: int) -> float:
+    #Bonus for holding a square sandwiched between two opponent stones on an edge.
+    #That piece can never be flipped back along that edge segment.
+    score = 0.0
+    opponent = -player
+
+    for edge in EDGES:
+        for idx in range(1, len(edge) - 1):
+            x, y = edge[idx]
+            if board[x, y] == player:
+                px, py = edge[idx - 1]
+                nx, ny = edge[idx + 1]
+                # Classic wedge: opponent, us, opponent along the edge
+                if board[px, py] == opponent and board[nx, ny] == opponent:
+                    score += 20.0
+                # Partial wedge: one side opponent, other side empty — still good
+                elif board[px, py] == opponent and board[nx, ny] == 0:
+                    score += 5.0
+                elif board[px, py] == 0 and board[nx, ny] == opponent:
+                    score += 5.0
+
+    return score
+
+def stoner_trap_score(board: np.ndarray, player: int) -> float:
+    #Detects weak edges: opponent has a foothold (X-square) that may 
+    #force us into moves that surrender the corner.
+    #Penalizes us if we have exposed edge pieces near an opponent X-square.
+    score = 0.0
+    opponent = -player
+
+    for corner, x_sq in X_SQUARES.items():
+        cx, cy = corner
+        xx, xy = x_sq
+
+        # Only relevant if corner is empty and opponent owns the X-square
+        if board[cx, cy] == 0 and board[xx, xy] == opponent:
+            # Check if we have pieces on the adjacent edges near this corner
+            # that could be used to force us toward the corner
+            c_sqs = C_SQUARES[corner]
+            for (ex, ey) in c_sqs:
+                if board[ex, ey] == player:
+                    # We're on a C-square next to an opponent X-square = danger
+                    score -= 25.0
+    
+    return score
+
+
 
 # Zobristhashing is what is allowing the TT table to be used at a greater depth
 #XOR allows us to recompute only the cells that changed instead of rehasing all 64 squares from scratch
@@ -171,6 +275,11 @@ def evaluate(board: np.ndarray, player: int) -> float:
     #for evaporation control
     stability_score = count_stable_discs(board, player) - count_stable_discs(board, -player)
     parity_advantage = get_parity_score(board, player)
+
+    # --- New tactical scores (could be wrapped in phase weights later 3/4/26 donald)---
+    cx_score = corner_X_c_square_score(board, player) #replaces static POS_WEIGHTS penalty for X/C squares with context, if you own the corner, those squares flip from penalty to bonus
+    wedge = wedge_score(board, player) # scans every edge for your pieces sandwiched between two opponent pieces, which are permanently safe along that edge segment
+    stoner = stoner_trap_score(board, player) # specifically flags the scenario where opponent is in an X-square and you're on an adjacent C-square
     
     # Phase-based weights
     # Early: prioritize mobility/position/corners; downweight piece count
@@ -191,6 +300,9 @@ def evaluate(board: np.ndarray, player: int) -> float:
         + w_frontier * frontier_score
         + w_parity * parity_advantage
         + w_stability * stability_score
+        + cx_score 
+        + wedge
+        + stoner
     )
 
 # Ordering: Corners first, then positional weight, sorts by strategic priority before searching them
