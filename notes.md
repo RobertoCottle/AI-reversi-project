@@ -29,9 +29,34 @@ e. Search Optimizations
         b. Iterative Deepening: Instead of a fixed DEPTH = 3, search depth 1, then 2, then 3, etc., until your time limit is almost up. This ensures you always have the best possible move ready.
         c. Null Move Pruning: If a position is so good that even "passing" (giving the opponent two moves in a row) still results in a win, you can prune that branch early.
 
+Other ideas to explore:
+f. Aspiration Windows alpha-beta: 
+    narrows the alpha-beta window based on previous iteration's score, faster but needs re-search on fail
+
+g. Reversi Pattern based evaliuation: lookup tables for edge patterns, used in Logistello (the strongest Reversi engine ever built)
+
+chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://www.cs.umd.edu/sites/default/files/scholarly_papers/Engel.pdf
+
+
+--For short games such as tic-tac-toe, the Minimax algorithm can be used exactly as described, but for longer games like Reversi, chess, Go, etc, such a calculation is only feasible for board positions near the endgame. Because the computational cost is exponential in the search depth, a full search is impractical for most board positions. The runtime of the Minimax algorithm can be improved using alpha-beta pruning [1], but the overall exponential dependence on the search depth cannot be avoided. Because of this, Minimax is usually run with a xed search depth, resulting in leaf nodes which are not endgame boards. The exact score for these boards is therefore unknown, and a board position evaluator must be used to predict the score. Much of the work in game AI centers on creating a good position evaluator- nding important features and designing or training a model to predict the quality of intermediate board positions.
+
+--ProbCut- an algorithm which prunes subtrees which are probablistically irrelevant
+
+--SVM classifer, as well as evaluating intermediate board positions using linear interpolation
+
+-minmax should be used more towards the endgame for searching, because the computational cost is exponential in the search depth, a full search is impractical for most board positions. The runtime of the Minimax algorithm can be improved using alpha-beta pruning [1], but the overall exponential dependence on the search depth cannot be avoided. Because of this, Minimax is usually run with a xed search depth, resulting in leaf nodes which are not endgame boards. The exact score for these boards is therefore unknown, and a board position evaluator must be used to predict the score. Much of the work in game AI centers on creating a good position evaluator- nding important features and designing or training a model to predict the quality of intermediate board positions.
+
+-uses the Minimax algorithm to propagate board evaluations backwards from the endgame.
+-SVM classifier
+
+-have minimax learn from the endgame to early game ?
+
 https://www.geeksforgeeks.org/dsa/minimax-algorithm-in-game-theory-set-5-zobrist-hashing/ 
 https://samsoft.org.uk/reversi/strategy.htm 
 https://samsoft.org.uk/reversi/openings.htm
+
+Min-Max vs. Monte Carlo Tree Search (MCTS)
+https://www.geeksforgeeks.org/artificial-intelligence/mini-max-algorithm-in-artificial-intelligence/ 
 
 --3/1/26
 
@@ -133,3 +158,43 @@ Better_PlayerV3:
   Avg Winning Discs: 39.00
   Avg Losing Discs: 0.00
   Avg Corners in Wins: 3.00
+
+
+  -3/8/2026
+
+  Implement these into `Better_Player_V4` for further advancement:
+
+  -Iterative Deepening Depth First Search (IDDFS) Reversi — lets you use time as your budget instead of fixed depth, always has a best move ready if time runs out
+
+  -Reversi pattern based evaluation — lookup tables for edge patterns, used in Logistello (the strongest Reversi engine ever built)
+
+  -Reversi perfect endgame solver — when empties drop below ~14-16, you can solve perfectly with pure alpha-beta since the search space collapses
+
+  -Othello opening book — precomputed first ~10 moves, skips search entirely for known strong openings
+
+  -Architecture: full stability[CHECK] → endgame solver → iterative deepening[CHECK] → bitboards. Bitboards are the biggest rewrite but unlock the most speed.
+
+  -possible to get the minimax to learn the game starting from the ending positions ? 
+
+  -- 3/9/2026
+
+  ===== TOURNAMENT RESULTS =====
+
+(Better PlayerV3 vs BPP_V4-5)
+Better_PlayerV3:
+  Wins: 0
+  Losses: 20
+  Avg Winning Discs: 0.00
+  Avg Losing Discs: 19.50
+  Avg Corners in Wins: 0.00
+
+BP_V4-5:
+  Wins: 20
+  Losses: 0
+  Avg Winning Discs: 44.50
+  Avg Losing Discs: 0.00
+  Avg Corners in Wins: 2.50
+
+-- BP_V4-5 increases time duration against greedy_player, but does not show it against greedy_player
+
+--After lowering threshold, the issue seems to have resolved. 
