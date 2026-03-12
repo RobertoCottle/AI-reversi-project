@@ -168,11 +168,11 @@ Better_PlayerV3:
 
   -Reversi pattern based evaluation — lookup tables for edge patterns, used in Logistello (the strongest Reversi engine ever built)
 
-  -Reversi perfect endgame solver — when empties drop below ~14-16, you can solve perfectly with pure alpha-beta since the search space collapses
+  -Reversi perfect endgame solver — when empties drop below ~14-16, you can solve perfectly with pure alpha-beta since the search space collapses[CHECK]
 
   -Othello opening book — precomputed first ~10 moves, skips search entirely for known strong openings
 
-  -Architecture: full stability[CHECK] → endgame solver → iterative deepening[CHECK] → bitboards. Bitboards are the biggest rewrite but unlock the most speed.
+  -Architecture: full stability[CHECK] → endgame solver[CHECK] → iterative deepening[CHECK] → bitboards. Bitboards are the biggest rewrite but unlock the most speed.
 
   -possible to get the minimax to learn the game starting from the ending positions ? 
 
@@ -198,3 +198,76 @@ BP_V4-5:
 -- BP_V4-5 increases time duration against greedy_player, but does not show it against greedy_player
 
 --After lowering threshold, the issue seems to have resolved. 
+
+--Reversi Opennings: 
+--https://samsoft.org.uk/reversi/openings.htm 
+
+-- 3/10/2026
+
+-Have a list of preapproved openings through the openings.json that the game reconginizes and makes a move with during `choose_move` OR have the game recording its own winning opening moves, so that it may iterate and learn even better. 
+
+--will probably need to move it bitboards to make the engine even faster
+
+--BP_V5 is not ready, was taking a minute as white to make a decision
+
+--3/12/26
+-BP_V4-5 lost against Better_PlayerV2 and Better_Player when BP_V4-5 was white.py
+
+(BP_v4-5 as white vs Better_Player as black)
+===== TOURNAMENT RESULTS =====
+
+BP_V4-5:
+  Wins: 10
+  Losses: 10
+  Avg Winning Discs: 48.00
+  Avg Losing Discs: 21.00
+  Avg Corners in Wins: 3.00
+
+Better_Player:
+  Wins: 10
+  Losses: 10
+  Avg Winning Discs: 43.00
+  Avg Losing Discs: 16.00
+  Avg Corners in Wins: 4.00
+
+(BP_v4-5 as white vs Better_PlayerV2 as black)
+  ===== TOURNAMENT RESULTS =====
+
+BP_V4-5:
+  Wins: 10
+  Losses: 10
+  Avg Winning Discs: 48.00
+  Avg Losing Discs: 21.00
+  Avg Corners in Wins: 3.00
+
+Better_PlayerV2:
+  Wins: 10
+  Losses: 10
+  Avg Winning Discs: 43.00
+  Avg Losing Discs: 16.00
+  Avg Corners in Wins: 4.00
+
+(BP_v4-5 as white vs Better_PlayerV3 as black)
+  ===== TOURNAMENT RESULTS =====
+
+BP_V4-5:
+  Wins: 20
+  Losses: 0
+  Avg Winning Discs: 44.50
+  Avg Losing Discs: 0.00
+  Avg Corners in Wins: 2.50
+
+Better_PlayerV3:
+  Wins: 0
+  Losses: 20
+  Avg Winning Discs: 0.00
+  Avg Losing Discs: 19.50
+  Avg Corners in Wins: 0.00
+
+  -BP_V4-5 beats all previous versions when it is black, however, Better_Player and Better_PlayerV2 are 50/50 when BP_V4-5 is white. 
+
+  -Better_PlayerV3 as white in tournaments beats Better_PlayerV2 for all 20 games.
+  -Better_PlayerV3 as white in tournaments beats Better_Player for all 20 games.
+
+  -Why is BP_V4-5 as white totally beatting Better_PlayerV3 as black but not Better_Player or Better_PlayerV2 ?
+  -BP_V4-5 as white is totally beating Better_PlayerV4 as black.
