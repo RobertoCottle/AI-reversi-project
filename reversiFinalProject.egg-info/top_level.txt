@@ -1,0 +1,3 @@
+bootstrap
+reversi_ai
+scripts

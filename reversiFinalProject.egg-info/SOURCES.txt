@@ -1,0 +1,14 @@
+setup.py
+bootstrap/__init__.py
+bootstrap/ntuple_networks.py
+bootstrap/td_selfplay.py
+bootstrap/td_trainer.py
+reversiFinalProject.egg-info/PKG-INFO
+reversiFinalProject.egg-info/SOURCES.txt
+reversiFinalProject.egg-info/dependency_links.txt
+reversiFinalProject.egg-info/top_level.txt
+reversi_ai/__init__.py
+reversi_ai/reversi.py
+reversi_ai/reversi_server.py
+scripts/__init__.py
+scripts/run_bootstrap.py
