@@ -1,4 +1,5 @@
 bootstrap
+evaluation
 model
 reversi_ai
 scripts

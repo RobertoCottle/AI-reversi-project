@@ -3,6 +3,10 @@ bootstrap/__init__.py
 bootstrap/ntuple_networks.py
 bootstrap/td_selfplay.py
 bootstrap/td_trainer.py
+evaluation/__init__.py
+evaluation/evaluator.py
+evaluation/metrics.py
+evaluation/opponents.py
 model/__init__.py
 model/encoder.py
 model/network.py
@@ -16,12 +20,16 @@ reversi_ai/reversi.py
 reversi_ai/reversi_server.py
 scripts/__init__.py
 scripts/run_bootstrap.py
+scripts/run_evaluation.py
 scripts/run_mcts_tests.py
 scripts/run_pretrain.py
 scripts/run_self_play.py
+scripts/run_training.py
 search/__init__.py
 search/mcts.py
 search/puct.py
 training/__init__.py
 training/replay_store.py
 training/self_play.py
+training/train_loop.py
+training/trainer.py

@@ -123,3 +123,16 @@ Both losses flow backward through the same shared residual tower, so every gradi
 The reason this converges to genuine strength rather than just spinning in circles is that the MCTS search acts as a policy improvement operator. Even with an imperfect network, running 400 simulations consistently finds better moves than the raw network predicts. When those better moves become training targets, the network gets pulled toward the search's understanding. The next iteration's search then starts from a stronger network and finds even better moves. Each cycle the gap between what the network knows and what the search knows narrows, and the overall level of play rises.
 
 By iteration 200 with 20 games per iteration, the network has seen roughly 200 × 20 × 60 = 240,000 positions from its own play on top of the pretrained starting point, each labeled with MCTS-quality policy targets and real game outcomes. The network has been nudged toward better move evaluation 200 × 100 = 20,000 gradient steps. The `best.pt` checkpoint saved at the end is the distilled product of all of that — a network that can produce strong move recommendations in a single forward pass without any search at all, though it plays even stronger when MCTS is wrapped around it at competition time.
+
+
+### layer 6 results
+
+  Iter  194/200 | Buf=243,002 | W=50.00% B=40.00% D=10.00% | loss=2.0852 (p=1.7449 v=0.3403) | time=305.0s
+  Iter  195/200 | Buf=244,229 | W=40.00% B=60.00% D=0.00% | loss=2.0961 (p=1.7512 v=0.3450) | time=351.2s
+  Iter  196/200 | Buf=245,454 | W=30.00% B=60.00% D=10.00% | loss=2.0929 (p=1.7446 v=0.3483) | time=325.1s
+  Iter  197/200 | Buf=246,680 | W=20.00% B=75.00% D=5.00% | loss=2.0869 (p=1.7358 v=0.3511) | time=357.4s
+  Iter  198/200 | Buf=247,908 | W=35.00% B=60.00% D=5.00% | loss=2.1041 (p=1.7549 v=0.3492) | time=344.4s
+  Iter  199/200 | Buf=249,133 | W=35.00% B=50.00% D=15.00% | loss=2.0886 (p=1.7405 v=0.3482) | time=339.0s
+  Iter  200/200 | Buf=250,356 | W=60.00% B=35.00% D=5.00% | loss=2.0953 (p=1.7492 v=0.3461) | time=301.9s
+           Checkpoint saved → data/checkpoints/iter_0200.pt
+[ReplayStore] Saved 250,356 examples to data/replay_buffer/buffer.npz
