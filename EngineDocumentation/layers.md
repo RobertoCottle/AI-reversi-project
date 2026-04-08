@@ -69,7 +69,7 @@ The policy loss as cross-entropy between the network's predicted policy `p` and 
 You optimize with Adam (learning rate starting at 2×10⁻³, decaying by 0.1× at iteration milestones 200 and 400). Gradient clipping at norm 1.0 prevents occasional explosive updates during early training when the value estimates are still unreliable.
 
 The MuZero Reanalyze improvement plugs in here. Every few training steps, instead of drawing a fresh minibatch from the replay buffer, you take an existing batch of positions and re-run MCTS on them using the current (improved) network weights to generate fresh π targets. This means old game positions continuously receive updated, higher-quality training signals as the network improves, rather than being stuck with the policy estimates from when they were first played. The computational overhead is moderate — roughly 30% more inference cost — but the sample efficiency gain is substantial.
-
+(We take MuZero concepts such as Reanalyze, we did not use MuZero)
 ---
 
 ## Layer 7: The evaluation harness — testing

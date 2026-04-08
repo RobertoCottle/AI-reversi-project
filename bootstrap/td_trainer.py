@@ -8,7 +8,7 @@ def run_bootstrap(
         lr: float = 0.001,
         epsilon_start: float = 0.3,
         epsilon_end: float = 0.05,
-        save_path: str = "data/checkpoints/ntuple_weights.pk1",
+        save_path: str = "data/checkpoints/ntuple_weights.pkl",
         log_every: int = 500,
 ):
     #phase 1 training loop.

@@ -51,3 +51,75 @@ https://pmc.ncbi.nlm.nih.gov/articles/PMC9137882/
 common commands:
 
 type nul > bootstrap\__init__.py (to create init files)
+
+Layer 2 — CPU only, no GPU needed
+Layer 3 pretraining — GPU will make this significantly faster
+Layer 4 MCTS — GPU helps during self-play data generation but not required
+Layer 5/6 training loop — GPU is where most of the speedup comes from
+Layer 7 evaluation — CPU is fine, you're not in a hurry
+Layer 8 competition — CPU is sufficient for inference
+
+why layer 5 is needed:
+
+Layer 5 is needed because Layer 6 (the training engine) cannot train on nothing — it needs actual game data to learn from, and that data has to come from the agent playing against itself.
+
+The key insight is that the pretrained network from Layer 3 was only trained on n-tuple value estimates, which are rough approximations. It has never actually played a game using MCTS search. Layer 5 bridges that gap by taking the pretrained network, running it through real games with real MCTS search, and recording every position it sees along with two critical pieces of information that Layer 3 never had:
+
+The MCTS policy — not just which moves are legal, but which moves MCTS actually considered good after 400 simulations of lookahead. This is a much richer training signal than the uniform-over-legal-moves policy that Layer 3 used.
+
+The actual game outcome — whether the position ultimately led to a win or loss. This grounds the value estimates in real results rather than n-tuple approximations.
+
+Without Layer 5, Layer 6 has no data to train on. Without Layer 6 improving the network, Layer 5 would keep generating data from a weak network forever. The two layers are designed to alternate — Layer 5 generates fresh game data from the current best network, Layer 6 trains a stronger network from that data, then Layer 5 runs again with the stronger network to generate better data, and so on. That iterative loop is the entire mechanism by which the agent improves beyond the pretrained starting point.
+
+In short: Layer 3 gives the network a warm start, Layer 5 gives Layer 6 something real to train on.
+
+pip install -e . -use after everytime you create a new folder, and put in a new __init__.py file.
+
+
+layer 5 output:
+Game  190/200 | Buffer: 11,634 | W=42.11% B=46.32% D=11.58%
+Game  200/200 | Buffer: 12,248 | W=42.00% B=46.50% D=11.50%
+
+layer 6- 
+
+Layer 6 is the heart of AlphaZero — the iterative improvement loop where the agent genuinely gets stronger over time. Let me walk through exactly what is happening.
+
+---
+
+## The core idea
+
+AlphaZero is built on one insight: a neural network can teach itself to play better by playing against itself, using its own search process to generate higher quality training targets than it currently produces. The network starts imperfect, plays games, the search process produces better decisions than the raw network would alone, and those better decisions become the training signal that improves the network. Then the stronger network produces even better search, which produces even better training data, and so on. This is the loop.
+
+---
+
+## What happens in each iteration
+
+Every iteration has exactly two phases that alternate.
+
+### Phase 1 — Self-play (generating data)
+
+The `SelfPlayWorker` plays 20 complete games from the opening position. For every single move in every game, it does not just ask the network "what move do you recommend?" — instead it runs 400 MCTS simulations, which means it looks ahead through hundreds of possible continuations using the network to evaluate leaf positions. The result of those 400 simulations is a visit count distribution across all legal moves — the moves that MCTS explored most heavily get the highest visit counts.
+
+This MCTS policy is meaningfully stronger than the raw network policy for a subtle reason. The network alone sees the current position and outputs a guess. The MCTS sees the current position, simulates 400 futures, and outputs a distribution shaped by what actually worked in those futures. It is the difference between guessing and calculating. That calculated distribution becomes the policy target stored in the replay buffer.
+
+After the game ends with a winner, every position in that game gets labeled with the actual outcome — win, loss, or draw from the perspective of whoever was to move in that position. That outcome becomes the value target stored in the replay buffer.
+
+So after Phase 1 of one iteration, roughly 20 × 60 = 1,200 new positions have been added to the buffer, each carrying a high-quality policy target from MCTS and a ground-truth value target from the actual game result.
+
+### Phase 2 — Gradient updates (improving the network)
+
+The `Trainer` samples 100 random minibatches of 256 positions from the replay buffer and runs backpropagation on each one. For each minibatch it computes two losses simultaneously:
+
+The policy loss is cross-entropy between what the network currently predicts as the best moves and what the MCTS search actually found to be the best moves. If the network says move A has 10% probability but MCTS visited move A 60% of the time, the policy loss is high and the gradient pushes the network to assign move A higher probability in future. Over many updates the network learns to internalize what MCTS knows — it learns to predict good moves directly without needing to search.
+
+The value loss is mean squared error between what the network predicts the outcome will be and what the outcome actually was. If the network says a position is slightly winning but the game was actually lost, the gradient pushes the value estimate downward for similar positions. Over many updates the network learns accurate position evaluation.
+
+Both losses flow backward through the same shared residual tower, so every gradient update improves both the value estimates and the move recommendations simultaneously.
+
+---
+
+## Why the loop produces improvement
+
+The reason this converges to genuine strength rather than just spinning in circles is that the MCTS search acts as a policy improvement operator. Even with an imperfect network, running 400 simulations consistently finds better moves than the raw network predicts. When those better moves become training targets, the network gets pulled toward the search's understanding. The next iteration's search then starts from a stronger network and finds even better moves. Each cycle the gap between what the network knows and what the search knows narrows, and the overall level of play rises.
+
+By iteration 200 with 20 games per iteration, the network has seen roughly 200 × 20 × 60 = 240,000 positions from its own play on top of the pretrained starting point, each labeled with MCTS-quality policy targets and real game outcomes. The network has been nudged toward better move evaluation 200 × 100 = 20,000 gradient steps. The `best.pt` checkpoint saved at the end is the distilled product of all of that — a network that can produce strong move recommendations in a single forward pass without any search at all, though it plays even stronger when MCTS is wrapped around it at competition time.
