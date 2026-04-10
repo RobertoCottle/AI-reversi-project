@@ -3,11 +3,42 @@ import csv
 import torch
 import numpy as np
 import time
+import shutil
+import glob
 
 from model.network import PolicyValueNet
 from training.self_play import SelfPlayWorker
 from training.replay_store import ReplayStore
 from training.trainer import Trainer
+
+DRIVE_BASE   = '/content/drive/MyDrive/AI-reversi-project'
+PROJECT_BASE = '/content/AI-reversi-project'
+
+def sync_to_drive():
+    """Copy all checkpoints and buffer to Google Drive."""
+    os.makedirs(f'{DRIVE_BASE}/data/checkpoints',   exist_ok=True)
+    os.makedirs(f'{DRIVE_BASE}/data/replay_buffer', exist_ok=True)
+    os.makedirs(f'{DRIVE_BASE}/data/training_logs', exist_ok=True)
+
+    # Sync all checkpoint files
+    for f in glob.glob(f'{PROJECT_BASE}/data/checkpoints/*.pt'):
+        dst = f'{DRIVE_BASE}/data/checkpoints/{os.path.basename(f)}'
+        shutil.copy(f, dst)
+
+    # Sync replay buffer
+    buf = f'{PROJECT_BASE}/data/replay_buffer/buffer.npz'
+    if os.path.exists(buf):
+        shutil.copy(buf, f'{DRIVE_BASE}/data/replay_buffer/buffer.npz')
+
+    # Sync training log
+    log = f'{PROJECT_BASE}/data/training_logs/training.csv'
+    if os.path.exists(log):
+        shutil.copy(log, f'{DRIVE_BASE}/data/training_logs/training.csv')
+
+    print(f"  [Drive] Synced to Google Drive")
+
+print("sync_to_drive() ready")
+
 
 
 def run_training_loop(
@@ -147,6 +178,11 @@ def run_training_loop(
                 iter_path = f"data/checkpoints/iter_{iteration:04d}.pt"
                 trainer.save_checkpoint(iter_path, iteration, channels, n_blocks)
                 print(f"           Checkpoint saved → {iter_path}")
+                # Sync to Drive if running in Colab
+                try:
+                    sync_to_drive()
+                except NameError:
+                    pass   # sync_to_drive not defined outside Colab, skip silently
 
             # Always keep a copy of the best (lowest loss) model
             if metrics['loss'] < best_loss:
@@ -163,6 +199,10 @@ def run_training_loop(
         emergency_path = f"data/checkpoints/iter_{iteration:04d}_emergency.pt"
         trainer.save_checkpoint(emergency_path, iteration, channels, n_blocks)
         store.save()
+        try:
+            sync_to_drive()
+        except NameError:
+            pass
         print(f"[Training] Saved to {emergency_path}")
         print(f"[Training] Buffer saved. Safe to exit.")
     #finally
