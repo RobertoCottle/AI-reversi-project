@@ -136,3 +136,16 @@ By iteration 200 with 20 games per iteration, the network has seen roughly 200 Ã
   Iter  200/200 | Buf=250,356 | W=60.00% B=35.00% D=5.00% | loss=2.0953 (p=1.7492 v=0.3461) | time=301.9s
            Checkpoint saved â†’ data/checkpoints/iter_0200.pt
 [ReplayStore] Saved 250,356 examples to data/replay_buffer/buffer.npz
+
+-stop google colab at 4/8/2026 1:42 pm
+-started cell 6 at 4/9/2026 6:27 pm
+(It was able to resume the training)
+[Resume] Found: iter_0068_emergency.pt
+[Resume] Completed 68/200, 132 remaining
+[Training] Using device: cuda
+[Training] Resuming from iteration 68
+[ReplayStore] Loaded 82,930 examples from /content/AI-reversi-project/data/replay_buffer/buffer.npz
+[Training] Replay buffer: 82,930 existing positions
+[Training] Starting loop: 132 iterations
+           20 games/iter, 100 update steps/iter
+           batch=256, lr=0.002, sims=400

@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import copy
 from reversi_ai.reversi import reversi as reversi_game
 from bootstrap.td_selfplay import get_legal_moves
 from model.encoder import encode_board
@@ -8,11 +9,6 @@ from search.mcts import MonteCarloTreeSearch
 
 
 class NeuralAgent:
-    
-    #Wraps PolicyValueNet + MCTS for use in evaluation matches.
-    #Uses a lower simulation count than training for faster evaluation.
-    
-
     def __init__(
         self,
         model:         PolicyValueNet,
@@ -20,24 +16,29 @@ class NeuralAgent:
         n_simulations: int   = 200,
         c_puct:        float = 1.5,
     ):
-        self.mcts = MonteCarloTreeSearch(model, device, c_puct)
+        self.model         = model
+        self.device        = device
         self.n_simulations = n_simulations
+        self.mcts          = MonteCarloTreeSearch(model, device, c_puct)
 
     def select_action(self, board: np.ndarray, player: int):
+        # Pass a copy of the board to prevent MCTS from mutating game state
         policy, _ = self.mcts.search(
-            board         = board,
+            board         = copy.deepcopy(board),
             player        = player,
             n_simulations = self.n_simulations,
-            add_noise     = False,   # no noise during evaluation
+            add_noise     = False,
         )
         return self.mcts.select_action(policy, temperature=0.0)
+
 
 def play_match(agent_white, agent_black, debug=False) -> int:
     game = reversi_game()
     consecutive_passes = 0
     move_count = 0
+    MAX_MOVES = 120   # absolute safety limit, normal game is 60 moves
 
-    while True:
+    while move_count < MAX_MOVES:
         player = game.turn
         agent  = agent_white if player == 1 else agent_black
         legal  = get_legal_moves(game, player)
@@ -51,21 +52,41 @@ def play_match(agent_white, agent_black, debug=False) -> int:
         else:
             consecutive_passes = 0
 
-        action = agent.select_action(game.board, player)
+        action = agent.select_action(copy.deepcopy(game.board), player)
         x, y   = action
         move_count += 1
 
         if x == -1 and y == -1:
+            consecutive_passes += 1
+            if consecutive_passes >= 2:
+                break
             game.turn = -game.turn
-        else:
+            continue
+
+        result = game.step(x, y, player, commit=True)
+
+        if result < 0:
+            if debug:
+                print(f"  WARNING: illegal move ({x},{y}) result={result}, "
+                      f"picking random")
+            x, y = legal[np.random.randint(len(legal))]
             game.step(x, y, player, commit=True)
-            game.turn = -game.turn
+
+        game.turn = -game.turn
+
+        if debug:
+            white = int(np.sum(game.board == 1))
+            black = int(np.sum(game.board == -1))
+            print(f"  Move {move_count}: "
+                  f"({'W' if player==1 else 'B'}) "
+                  f"({x},{y}) | W={white} B={black}")
 
     white = int(np.sum(game.board == 1))
     black = int(np.sum(game.board == -1))
 
     if debug:
-        print(f"  Game over after {move_count} moves | White={white} Black={black}")
+        print(f"  Game over after {move_count} moves | "
+              f"White={white} Black={black}")
 
     if white > black:
         return 1

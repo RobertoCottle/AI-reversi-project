@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from reversi_ai.reversi import reversi as reversi_game
-from bootstrap.td_selfplay import get_legal_moves
+from bootstrap.td_selfplay import get_legal_moves_from_board
 from model.encoder import encode_board
 from model.network import PolicyValueNet
 from search.puct import puct_score
@@ -249,13 +249,13 @@ class MonteCarloTreeSearch:
         # Find legal moves using the game engine
         sim = reversi_game()
         sim.board = node.board.copy()
-        legal = get_legal_moves(sim, node.player)
+        legal = get_legal_moves_from_board(node.board, node.player)
 
         if not legal:
             # No legal moves — check if opponent can move
             opp_sim = reversi_game()
             opp_sim.board = node.board.copy()
-            opp_legal = get_legal_moves(opp_sim, -node.player)
+            opp_legal = get_legal_moves_from_board(node.board, node.player)
 
             if not opp_legal:
                 # Neither player can move — terminal state

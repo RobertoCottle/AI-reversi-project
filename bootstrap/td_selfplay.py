@@ -3,6 +3,39 @@ import copy
 from reversi_ai.reversi import reversi as reversi_game
 from bootstrap.ntuple_networks import NTupleNetwork
 
+def get_legal_moves_from_board(board: np.ndarray, player: int) -> list:
+    """
+    Get legal moves directly from a board array without using
+    a reversi game instance, avoiding any mutation risk.
+    """
+    directions = [
+        [1,1],[1,0],[1,-1],[0,1],
+        [0,-1],[-1,1],[-1,0],[-1,-1]
+    ]
+    legal = []
+    for x in range(8):
+        for y in range(8):
+            if board[x, y] != 0:
+                continue
+            for dx, dy in directions:
+                cx, cy = x + dx, y + dy
+                found_opponent = False
+                while 0 <= cx <= 7 and 0 <= cy <= 7:
+                    if board[cx, cy] == 0:
+                        break
+                    elif board[cx, cy] == -player:
+                        found_opponent = True
+                        cx += dx
+                        cy += dy
+                    elif board[cx, cy] == player:
+                        if found_opponent:
+                            legal.append((x, y))
+                        break
+                    else:
+                        break
+                if (x, y) in legal:
+                    break
+    return list(dict.fromkeys(legal))  # deduplicate preserving order
 
 def get_legal_moves(game: reversi_game, player: int) -> list[tuple[int, int]]:
     
