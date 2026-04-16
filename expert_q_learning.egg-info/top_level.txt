@@ -1,0 +1,7 @@
+agents
+core
+data
+network
+reversi
+reversi_server
+training
